@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<jnlp spec="1.0+" codebase="http://10.1.43.239:9385/jnlp/" href="$outputFile">
+    <information>
+        <title>fstn.test</title>
+        <vendor>fstn</vendor>
+        <description>Local test</description>
+        <offline-allowed/>
+        <shortcut online="false">
+            <desktop/>
+            <menu submenu="fstn">
+                <menu submenu="Test"/>
+            </menu>
+        </shortcut>
+    </information>
+    <security>
+        <all-permissions/>
+    </security>
+    <resources>
+        <j2se version="1.8+" initial-heap-size="32m" max-heap-size="128m"/>
+        $dependencies
+        <property name="storage.output" value="C:\\tmp\\test\\output"></property>
+        <property name="server.websocket.url" value="http://tstt05dock01:9386"></property>
+        <property name="server.rest.url" value="http://tstt05dock01:9386/rest"></property>
+    </resources>
+    <!--resources os="Windows">
+        <nativelib href="lib/twain-windows.jar"/>
+    </resources-->
+    <application-desc main-class="$mainClass">
+    </application-desc>
+</jnlp>

@@ -1,0 +1,324 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>maven-guide</artifactId>
+        <groupId>com.fstn</groupId>
+        <version>1.0-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.fstn</groupId>
+    <artifactId>generate-jnlp</artifactId>
+
+
+
+    <properties>
+        <start-class>com.fstn.test.server.Application</start-class>
+        <docker.front.docker.path>../../../docker/front/</docker.front.docker.path>
+        <jnlp.backend.baseUrl></jnlp.backend.baseUrl>
+        <jnlp.websocket.baseUrl></jnlp.websocket.baseUrl>
+    </properties>
+
+
+    <profiles>
+        <profile>
+            <id>prod</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <jnlp.backend.baseUrl>http://${backend.host.prod}:${backend.port.prod}/test/rest
+                </jnlp.backend.baseUrl>
+                <jnlp.websocket.baseUrl>http://${backend.host.prod}:${backend.port.prod}</jnlp.websocket.baseUrl>
+            </properties>
+            <build>
+                <resources>
+                    <resource>
+                        <directory>src/main/resources</directory>
+                        <filtering>true</filtering>
+                    </resource>
+                </resources>
+            </build>
+        </profile>
+        <profile>
+            <id>dev</id>
+            <properties>
+                <jnlp.backend.baseUrl>http://${backend.host.dev}:${backend.port.dev}/test/rest</jnlp.backend.baseUrl>
+                <jnlp.websocket.baseUrl>http://${backend.host.dev}:${backend.port.dev}</jnlp.websocket.baseUrl>
+            </properties>
+            <build>
+                <resources>
+                    <resource>
+                        <directory>src/main/resources</directory>
+                        <filtering>true</filtering>
+                    </resource>
+                </resources>
+            </build>
+        </profile>
+    </profiles>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.fstn.test.packages</groupId>
+            <artifactId>jar-package</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fstn.test.providers.api</groupId>
+            <artifactId>provider-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fstn.test.providers</groupId>
+            <artifactId>file</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fstn.test.providers</groupId>
+            <artifactId>scanner</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fstn.test.providers</groupId>
+            <artifactId>email</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fstn.test</groupId>
+            <artifactId>agent</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <!-- External dependencies -->
+        <dependency>
+            <groupId>org.atmosphere</groupId>
+            <artifactId>nettosphere</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.atmosphere</groupId>
+            <artifactId>atmosphere-runtime</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.atmosphere</groupId>
+            <artifactId>wasync</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+        </dependency>
+    </dependencies>
+
+
+    <build>
+        <plugins>
+            <plugin>
+                <!-- Copy dependencies in lib folder -->
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>2.10</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/lib</outputDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>webstart-maven-plugin</artifactId>
+                <version>1.0-beta-7</version>
+                <executions>
+                    <execution>
+                        <!-- This is new execution block, don't be afraid,
+                             inspite of multiple executions
+                             signing and manifest update is performed only once -->
+                        <id>generate-jnlp-template-for-signing</id>
+                        <!--<phase>generate-resources</phase>-->
+                        <!--<phase>prepare-package</phase>-->
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>jnlp-inline</goal>
+                            <!--<goal>jnlp-download-servlet</goal>-->
+                        </goals>
+                        <configuration>
+                            <archive>${project.build.directory}/${project.build.finalName}-resources.zip</archive>
+                            <jnlp>
+                                <inputTemplateResourcePath>${project.basedir}/src/main/jnlp
+                                </inputTemplateResourcePath>
+                                <inputTemplate>template.vm</inputTemplate>
+                                <outputFile>TestService.jnlp</outputFile>
+                                <mainClass>com.fstn.test.server.TrayIcon</mainClass>
+                            </jnlp>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>generate-jnlp-and-sign-libs</id>
+                        <!--<phase>prepare-package</phase>-->
+                        <!--<phase>none</phase>-->
+                        <phase>prepare-package</phase>
+                        <!--<phase>generate-resources</phase>-->
+                        <goals>
+                            <goal>jnlp-inline</goal>
+                            <!--<goal>jnlp-download-servlet</goal>-->
+                        </goals>
+                    </execution>
+                </executions>
+                <dependencies>
+                    <!-- TODO(pw): This dependency is just a workaround for 1.0-beta-6
+                         until 1.0-beta-7 is released. -->
+                    <dependency>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>keytool-api-1.7</artifactId>
+                        <version>1.5</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>webstart-pack200-api</artifactId>
+                        <version>1.0-beta-6</version>
+                    </dependency>
+                </dependencies>
+                <configuration>
+                    <!--outputDirectory></outputDirectory--> <!-- not required?? -->
+
+                    <!--
+                    Set to true to exclude all transitive dependencies. Default is false.
+                    -->
+                    <excludeTransitive>false</excludeTransitive>
+
+                    <!-- The path where the libraries are stored within the jnlp structure. not required. by default the libraries are within the working directory -->
+                    <libPath>lib</libPath>
+
+                    <!-- [optional] transitive dependencies filter - if omitted, all transitive dependencies are included -->
+                    <dependencies>
+                        <!-- Note that only groupId and artifactId must be specified here. because of a limitation of the Include/ExcludesArtifactFilter -->
+                        <includes>
+                            <!--include>org.atmosphere:nettosphere</include-->
+                            <!--include>com.fasterxml.jackson.core:jackson-databind</include-->
+                            <!--include>org.slf4j:slf4j-api</include-->
+                        </includes>
+                        <!-- excludes>
+                          <exclude></exclude>
+                        <excludes-->
+                    </dependencies>
+
+                    <!--resourcesDirectory>${project.basedir}/src/main/jnlp/resources</resourcesDirectory--> <!-- default value -->
+
+                    <archive>${project.build.directory}/${project.build.finalName}-resources.zip</archive>
+                    <!-- JNLP generation -->
+                    <jnlp>
+                        <!-- default values -->
+                        <!--inputTemplateResourcePath>${project.basedir}</inputTemplateResourcePath-->
+                        <!--inputTemplate>src/main/jnlp/template.vm</inputTemplate--> <!-- relative to inputTemplateResourcePath -->
+                        <inputTemplateResourcePath>${project.basedir}/src/main/jnlp
+                        </inputTemplateResourcePath>
+                        <inputTemplate>template.vm</inputTemplate>
+                        <outputFile>TestService.jnlp</outputFile> <!-- defaults to launch.jnlp -->
+
+                        <!-- used to automatically identify the jar containing the main class. -->
+                        <!-- this is perhaps going to change -->
+                        <mainClass>com.fstn.test.server.TrayIcon</mainClass>
+                    </jnlp>
+
+
+                    <!-- SIGNING -->
+                    <!-- defining this will automatically sign the jar and its dependencies, if necessary -->
+                    <sign>
+                        <keystore>${project.basedir}/src/main/jnlp/keystore.jks</keystore>
+                        <keypass>*fstn@fstn.com
+                        </keypass>  <!-- we need to override passwords easily from the command line. ${keypass} -->
+                        <storepass>Fstn</storepass> <!-- ${storepass} -->
+                        <storetype>jks</storetype>
+                        <alias>le-e1656566e-36cb-4abc-96b9-7bbda63780b3</alias>
+
+                        <validity>365</validity>
+
+                        <!-- only required for generating the keystore -->
+                        <!--dnameCn>Fabrice Crohas</dnameCn>
+                        <dnameOu>FSTN</dnameOu>
+                        <dnameO>FSTN</dnameO>
+                        <dnameL>AIMARGUES</dnameL>
+                        <dnameSt></dnameSt>
+                        <dnameC>FR</dnameC-->
+
+                        <verify>false</verify> <!-- verify that the signing operation succeeded -->
+
+                        <!-- KEYSTORE MANAGEMENT -->
+                        <keystoreConfig>
+                            <delete>false</delete> <!-- delete the keystore -->
+                            <gen>false</gen>       <!-- optional shortcut to generate the store. -->
+                        </keystoreConfig>
+                    </sign>
+
+                    <!-- BUILDING PROCESS -->
+
+                    <!--                    <pack200>true</pack200>
+                                        <gzip>true</gzip>--> <!-- default force when pack200 false, true when pack200 selected ?? -->
+
+                    <!-- causes a version attribute to be output in each jar resource element, optional, default is false -->
+                    <outputJarVersions>false</outputJarVersions>
+
+                    <!--install>false</install--> <!-- not yet supported -->
+                    <verbose>true</verbose>
+
+                </configuration>
+            </plugin>
+            <plugin>
+                <!-- Step 2) move to APPLICATION_TEMPLATE from /target/jnlp
+                to target/jnlp/main.jar/JNLP-INF dir -->
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>truezip-maven-plugin</artifactId>
+                <version>1.2</version>
+                <executions>
+                    <execution>
+                        <id>move-jnlp-template</id>
+                        <phase>none</phase>
+                        <goals>
+                            <goal>move</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <from>${project.build.directory}/jnlp/TestService.jnlp</from>
+                    <to>
+                        ${project.build.directory}/jnlp/lib/agent-1.0.0-SNAPSHOT.jar/JNLP-INF/TestService.jnlp
+                    </to>
+                    <verbose>true</verbose>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <!-- Step 3) repeat signing of main.jar -->
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jarsigner-plugin</artifactId>
+                <version>1.1</version>
+                <executions>
+                    <execution>
+                        <id>sign</id>
+                        <phase>none</phase>
+                        <goals>
+                            <goal>sign</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <archiveDirectory>${project.build.directory}/jnlp/lib</archiveDirectory>
+                    <includes>
+                        <include>agent-1.0.0-SNAPSHOT.jar</include>
+                        <!--<include>twain-windows.jar</include>-->
+                    </includes>
+                    <keystore>${project.basedir}/src/main/jnlp/keystore.jks</keystore>
+                    <keypass>*1212212009@4424.com
+                    </keypass>  <!-- we need to override passwords easily from the command line. ${keypass} -->
+                    <storepass>*1516516515654</storepass> <!-- ${storepass} -->
+                    <alias>le-e1e6fefe-3621121224424bbda63780b3</alias>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

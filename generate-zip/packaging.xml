@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<assembly>
+    <id>resources</id>
+    <formats>
+        <format>zip</format>
+    </formats>
+    <fileSets>
+        <!-- code-style -->
+        <fileSet>
+            <directory>${basedir}/dist</directory>
+            <outputDirectory>dist</outputDirectory>
+            <includes>
+                <include>**/*</include>
+            </includes>
+        </fileSet>
+        <!-- maven/license -->
+        <fileSet>
+            <directory>${basedir}/maven/license</directory>
+            <outputDirectory>maven/license</outputDirectory>
+        </fileSet>
+    </fileSets>
+</assembly>
